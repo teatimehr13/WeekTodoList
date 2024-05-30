@@ -1,17 +1,17 @@
 <script setup>
-
+import WeekTodo from '@/components/WeekTodo.vue';
 </script>
 
 <template>
-  <header>
-
-  </header>
-
   <main>
-
+    <WeekTodo></WeekTodo>
   </main>
 </template>
 
-<style scoped>
-
+<style>
+  *{
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
 </style>
