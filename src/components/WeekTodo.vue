@@ -19,15 +19,19 @@ let weekTasks = props.weekTasks;
 console.log(weekTasks);
 
 let isEdit = ref(null);
+let isHover = ref(null);
 let swAdd_area = ref(true);
 let swNew_input = ref(null);
 let new_input = ref([]);
 
 let active = false;
+let popActive = ref(false);
+let tooltipActive = ref(false);
+let isDrag = ref(false);
 
 
 const onMove = () => {
-    console.log(weekTasks.value);
+    isDrag.value = true;
 };
 
 const toggleClick = (data) => {
@@ -36,6 +40,7 @@ const toggleClick = (data) => {
 const swEditInput = (id) => {
     // console.log(isEdit.value);
     isEdit.value === id ? isEdit.value = null : isEdit.value = id;
+    isHover.value = null;
     nextTick(() => {
         if (inputRefs.value[id]) {
             inputRefs.value[id].focus();
@@ -43,11 +48,31 @@ const swEditInput = (id) => {
     });
 }
 
+let isFocused = false;
+const swHoverContent = (id) => {
+    inputRefs.value[id].addEventListener('focus', () => {
+        isFocused = true;
+    });
+
+    inputRefs.value[id].addEventListener('blur', () => {
+        isFocused = false;
+        isHover.value = null;
+    });
+
+    if (!isFocused && !isDrag.value) {
+        isHover.value === id ? isHover.value = null : isHover.value = id;
+    }
+}
+
+const handleClick = (id) => {
+    swHoverContent(id)
+}
+
 const newInput_Toggle = (day) => {
     swNew_input.value == day ? swNew_input.value = null : swNew_input.value = day;
     active = true;
     nextTick(() => {
-        if(new_input.value[day]) {
+        if (new_input.value[day]) {
             new_input.value[day].focus()
         }
     })
@@ -55,7 +80,7 @@ const newInput_Toggle = (day) => {
 
 const add_task = (day) => {
     let val = event.target.value.trim();
-    emits("addTask",val,day)
+    emits("addTask", val, day)
     swNew_input.value = null
 }
 
@@ -76,8 +101,27 @@ const onDragStart = (event) => {
 
 const onDragEnd = (event) => {
     swAdd_area.value = !swAdd_area.value;
+    isDrag.value = !isDrag.value;
 };
 
+const updateContent = (target) => {
+    target.task = event.target.innerText;
+};
+
+const sw_pop = () => {
+    popActive.value = !popActive.value;
+    tooltipActive.value = false;
+}
+
+const sw_tool = (status) => {
+    switch(status){
+        case "close":
+            tooltipActive.value = false;
+        break
+        default:
+        tooltipActive.value = !tooltipActive.value;
+    }
+}
 
 //使用id做為key or 使用兩層index作為target
 let inputRefs = ref([]);
@@ -92,24 +136,55 @@ let inputRefs = ref([]);
                 </div>
                 <ul>
                     <draggable :list="tasks" group="tasks" animation="300" @start="onDragStart" @end="onDragEnd"
-                        item-key="id" :move="onMove" class="drag-container" tag="ul" ghost-class="ghost" drag-class="drag">
+                        item-key="id" :move="onMove" class="drag-container" tag="ul" ghost-class="ghost"
+                        drag-class="drag" handle=".handle">
                         <template #item="{ element, index }">
-                            <li>
-                                <div v-show="isEdit != element.id" @dblclick="swEditInput(element.id)">
-                                    <input type="checkbox" v-model="element.isChecked">
-                                    <span @click="toggleClick(element)">{{ element.task }}</span>
+                            <li class="list-container">
+                                <div class="list-content">
+                                    <div v-show="isEdit != element.id" @mouseenter="swHoverContent(element.id)"
+                                        @click="handleClick(element.id)">
+                                        <input type="checkbox" v-model="element.isChecked">
+                                        <span>{{ element.task }}</span>
+                                    </div>
+                                    <!-- <div v-show="isEdit == element.id">
+                                        <input type="text" v-model="element.task" @blur="swEditInput"
+                                            @keyup.enter="$event.target.blur()" :ref="el => inputRefs[element.id] = el">
+                                    </div> -->
                                 </div>
-                                <div v-show="isEdit == element.id">
-                                    <input type="text" v-model="element.task" @blur="swEditInput"
-                                        @keyup.enter="$event.target.blur()" :ref="el => inputRefs[element.id] = el">
+                                <div class="list-hover-content" v-show="isHover == element.id"
+                                    @mouseleave="swHoverContent(element.id)">
+                                    <div class="list-hover-container">
+                                        <div>
+                                            <input type="checkbox" v-model="element.isChecked">
+                                            <div contenteditable="true" data-content-editable-leaf="true"
+                                                @input="updateContent(element)" :ref="el => inputRefs[element.id] = el">
+                                                {{ element.task }}</div>
+                                        </div>
+                                        <div class="list-icon-group" @click="sw_pop" @mouseenter="sw_tool" @mousedown="sw_tool('close')">
+                                            <span class="handle" >
+                                                <font-awesome-icon :icon="['fas', 'grip-vertical']" />
+                                            </span>
+                                            <div class="tooltip" v-show="tooltipActive" >
+                                                <p>Drag to move</p>
+                                                <p>Click to open menu</p>
+                                            </div>
+
+                                            <div class="popover" v-if="popActive">
+                                                <div class="delete">Delete</div>
+                                                <div class="copy">Copy</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </li>
                         </template>
                         <template #footer>
                             <div style="flex-grow: 1;" class="here draggable-item" v-show="swAdd_area">
                                 <div class="new-todo-area">
-                                    <input v-if="swNew_input == day" type="text" class="new-todo-input" placeholder="請輸入新任務"
-                                        style="width: max-content;" :ref="el => new_input[day] = el" @blur="add_task(day)" @keyup.enter="$event.target.blur()" >
+                                    <input v-if="swNew_input == day" type="text" class="new-todo-input"
+                                        placeholder="請輸入新任務" style="width: max-content;"
+                                        :ref="el => new_input[day] = el" @blur="add_task(day)"
+                                        @keyup.enter="$event.target.blur()">
                                     <button @click="newInput_Toggle(day)" v-show="swNew_input != day">
                                         <font-awesome-icon :icon="['fas', 'plus']" />
                                         <span> New</span>
@@ -125,6 +200,11 @@ let inputRefs = ref([]);
 </template>
 
 <style scoped>
+.handle {
+    /* position: absolute;
+  left: -20px; */
+}
+
 .week-container {
     display: flex;
     justify-content: center;
@@ -160,21 +240,23 @@ input[type="text"] {
     background: transparent;
 }
 
-li {
-    /* border-bottom: 1px solid #eaecef; */
+.list-container {
+    position: relative;
 }
 
-li>div {
+.list-content>div,
+.list-hover-content>div {
     display: flex;
 }
 
-li span {
+
+.list-content span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-li>div:first-child {
+.list-content>div:first-child {
     padding: 0px 5px;
 }
 
@@ -182,7 +264,7 @@ li>div:first-child {
     /* border-top: 1px solid #eaecef; */
 }
 
-.new-todo-area button{
+.new-todo-area button {
     color: #bbb;
     font-size: .75rem;
     text-align: left;
@@ -192,7 +274,118 @@ li>div:first-child {
     padding: 0 5px;
 }
 
-.new-todo-area button:hover{
+.list-hover-content {
+    word-break: break-word;
+    box-shadow: 0 2px 13px 0 rgba(0, 0, 0, .15);
+    border-radius: 5px;
+    position: absolute;
+    z-index: 9;
+    top: 0;
+    left: 0;
+    padding: 0px 5px;
+    width: 99%;
+    background-color: #fff;
+}
+
+.list-hover-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.list-hover-container input[type="checkbox"] {
+    align-self: start;
+    min-height: 1.2rem;
+}
+
+.list-hover-container>div {
+    display: flex;
+}
+
+.list-hover-content span {
+    word-break: break-word;
+    word-wrap: break-word;
+}
+
+.list-icon-group {
+    height: max-content;
+    position: relative;
+    cursor: pointer;
+}
+
+.list-icon-group .tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, .7);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    z-index: 1;
+    bottom: -50%;
+    margin-bottom: -50px;
+    margin-left: -73px;
+    /* opacity:1;
+    visibility: visible; */
+    transition: opacity 0.3s;
+    width: max-content;
+}
+
+.list-icon-group .tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    margin-bottom: 60px;
+    left: 50%;
+    margin-left: 5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent black transparent;
+
+}
+
+
+
+.list-icon-group .popover {
+    visibility: visible;
+    width: max-content;
+    background-color: #FFF;
+    color: #55595c;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: -5px;
+    right: 12px;
+    transform: translate(100%, 100%);
+    opacity: 1;
+    transition: opacity 0.3s;
+    box-shadow: 0 1px 15px 2px rgba(0,0,0,.15);
+}
+
+.popover div {
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.popover .delete {
+    color: rgb(209, 60, 60);
+}
+
+.popover div:hover {
+    background-color: #eee;
+}
+
+.list-icon-group>span {
+    margin: 0 5px;
+    color: #8b8b8b;
+}
+
+.list-icon-group>span:hover {
+    color: #55595c;
+
+}
+
+.new-todo-area button:hover {
     cursor: pointer;
     background-color: whitesmoke;
     color: #aaa;
@@ -220,17 +413,17 @@ li>div:first-child {
 }
 
 .ghost {
-  background: whitesmoke;
+    background: whitesmoke;
 }
 
-.ghost > div {
-  visibility: hidden;
+.ghost>div {
+    visibility: hidden;
 }
 
-.drag > div {
+[contenteditable="true"] {
+    outline: none;
+    width: 100%;
+    min-width: 150px;
 }
 
-.hide {
-    display: none;
-}
 </style>
