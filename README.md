@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # week-todo
 
 This template should help get you started developing with Vue 3 in Vite.
@@ -27,3 +28,6 @@ npm run dev
 ```sh
 npm run build
 ```
+=======
+# WeekTodoList
+>>>>>>> 127ef4f1d28104bd455e34f5871f25152bb24f75
