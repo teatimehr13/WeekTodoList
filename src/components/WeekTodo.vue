@@ -62,6 +62,8 @@ const swHoverContent = (id) => {
     if (!isFocused && !isDrag.value) {
         isHover.value === id ? isHover.value = null : isHover.value = id;
     }
+
+    isDrag.value = false;
 }
 
 const handleClick = (id) => {
@@ -101,7 +103,6 @@ const onDragStart = (event) => {
 
 const onDragEnd = (event) => {
     swAdd_area.value = !swAdd_area.value;
-    isDrag.value = !isDrag.value;
 };
 
 const updateContent = (target) => {
