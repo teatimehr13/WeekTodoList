@@ -1,5 +1,5 @@
 <script setup>
-import { ref, defineComponent, nextTick } from 'vue'
+import { ref, defineComponent, nextTick, onMounted, onUnmounted, reactive } from 'vue'
 
 import draggable from 'vuedraggable'
 
@@ -26,9 +26,17 @@ let new_input = ref([]);
 
 let active = false;
 let popActive = ref(false);
+let popup = ref(null);
 let tooltipActive = ref(false);
 let isDrag = ref(false);
+let disableDraggable = ref(false);
+let contenteditable = ref(true);
 
+let popoverStyle = reactive({
+    position: 'absolute',
+    top: '0px',
+    left: '0px'
+})
 
 const onMove = () => {
     isDrag.value = true;
@@ -59,11 +67,12 @@ const swHoverContent = (id) => {
         isHover.value = null;
     });
 
-    if (!isFocused && !isDrag.value) {
+    if (!isFocused && !isDrag.value && !popActive.value) {
         isHover.value === id ? isHover.value = null : isHover.value = id;
     }
 
     isDrag.value = false;
+    tooltipActive.value = false;
 }
 
 const handleClick = (id) => {
@@ -86,17 +95,6 @@ const add_task = (day) => {
     swNew_input.value = null
 }
 
-// const handleDrop = (event) => {
-//       console.log('Item dropped in external zone');
-//       nextTick(() => {
-//           swAdd_input.value = !swAdd_input.value;
-//       })
-//       // Handle the drop logic
-//     };
-// const overDrop = (event) => {
-//     swAdd_input.value = !swAdd_input.value;
-// }
-
 const onDragStart = (event) => {
     swAdd_area.value = !swAdd_area.value;
 };
@@ -109,20 +107,58 @@ const updateContent = (target) => {
     target.task = event.target.innerText;
 };
 
-const sw_pop = () => {
+const sw_pop = (event) => {
+    const buttonRect = event.target.getBoundingClientRect();
+    console.log(buttonRect);
+    popoverStyle.top = `${buttonRect.bottom + window.scrollY + 3}px`;
+    popoverStyle.left = `${buttonRect.left + window.scrollX}px`;
+
     popActive.value = !popActive.value;
     tooltipActive.value = false;
+    disableDraggable.value = !disableDraggable.value;
+    contenteditable.value = !contenteditable.value;
 }
 
 const sw_tool = (status) => {
-    switch(status){
+    switch (status) {
         case "close":
             tooltipActive.value = false;
-        break
+            break
         default:
-        tooltipActive.value = !tooltipActive.value;
+            if (popActive.value) {
+                tooltipActive.value = false;
+            } else {
+                tooltipActive.value = true;
+            }
     }
 }
+
+let removeYourListener = null;
+const handleClickOutside = (event) => {
+    let els = document.querySelectorAll(".list-icon-group");
+    const YOUR_ELEMENT = popup.value;
+
+    //nodelist to array
+    //return true if any one of the conditions is met
+    const isClickInside = Array.from(els).some((el) => {
+        return el.contains(event.target);
+    });
+
+    if (!YOUR_ELEMENT.contains(event.target) && !isClickInside) {
+        popActive.value = false;
+    }
+};
+
+
+onMounted(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+});
+
+onUnmounted(() => {
+    if (removeYourListener) {
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+});
 
 //使用id做為key or 使用兩層index作為target
 let inputRefs = ref([]);
@@ -138,7 +174,7 @@ let inputRefs = ref([]);
                 <ul>
                     <draggable :list="tasks" group="tasks" animation="300" @start="onDragStart" @end="onDragEnd"
                         item-key="id" :move="onMove" class="drag-container" tag="ul" ghost-class="ghost"
-                        drag-class="drag" handle=".handle">
+                        drag-class="drag" handle=".handle" :disabled="disableDraggable">
                         <template #item="{ element, index }">
                             <li class="list-container">
                                 <div class="list-content">
@@ -157,22 +193,18 @@ let inputRefs = ref([]);
                                     <div class="list-hover-container">
                                         <div>
                                             <input type="checkbox" v-model="element.isChecked">
-                                            <div contenteditable="true" data-content-editable-leaf="true"
-                                                @input="updateContent(element)" :ref="el => inputRefs[element.id] = el">
+                                            <div :contenteditable=contenteditable @input="updateContent(element)"
+                                                :ref="el => inputRefs[element.id] = el">
                                                 {{ element.task }}</div>
                                         </div>
-                                        <div class="list-icon-group" @click="sw_pop" @mouseenter="sw_tool" @mousedown="sw_tool('close')">
-                                            <span class="handle" >
+                                        <div class="list-icon-group" @click="sw_pop" @mouseenter="sw_tool"
+                                            @mousedown="sw_tool('close')">
+                                            <span class="handle">
                                                 <font-awesome-icon :icon="['fas', 'grip-vertical']" />
                                             </span>
-                                            <div class="tooltip" v-show="tooltipActive" >
+                                            <div class="tooltip" v-show="tooltipActive">
                                                 <p>Drag to move</p>
                                                 <p>Click to open menu</p>
-                                            </div>
-
-                                            <div class="popover" v-if="popActive">
-                                                <div class="delete">Delete</div>
-                                                <div class="copy">Copy</div>
                                             </div>
                                         </div>
                                     </div>
@@ -197,6 +229,11 @@ let inputRefs = ref([]);
                 </ul>
             </div>
         </div>
+    </div>
+
+    <div class="popover" v-show="popActive" ref="popup" :style="popoverStyle">
+        <div class="delete">Delete</div>
+        <div class="copy">Copy</div>
     </div>
 </template>
 
@@ -344,8 +381,7 @@ input[type="text"] {
 }
 
 
-
-.list-icon-group .popover {
+.popover {
     visibility: visible;
     width: max-content;
     background-color: #FFF;
@@ -354,13 +390,13 @@ input[type="text"] {
     border-radius: 6px;
     padding: 5px;
     position: absolute;
-    z-index: 1;
-    bottom: -5px;
-    right: 12px;
-    transform: translate(100%, 100%);
+    z-index: 9;
+    /* bottom: -5px;
+    right: 12px; */
+    /* transform: translate(100%, 100%); */
     opacity: 1;
     transition: opacity 0.3s;
-    box-shadow: 0 1px 15px 2px rgba(0,0,0,.15);
+    box-shadow: 0 1px 15px 2px rgba(0, 0, 0, .15);
 }
 
 .popover div {
@@ -426,5 +462,4 @@ input[type="text"] {
     width: 100%;
     min-width: 150px;
 }
-
 </style>
