@@ -33,7 +33,32 @@ export const useCounterStore = defineStore('useCounterStore', () => {
 
     console.log(new_id);
   }
-  return { count, addTask, weekList }
+
+  const delTask = (obj) => {
+    let id = obj.id;
+    let week = obj.week;
+    let del_idx = weekList[week].findIndex(e => e.id == id);
+    weekList[week].splice(del_idx,1);
+  }
+
+  const copyTask = (obj) => {
+    maxId += 1;
+    let new_id = maxId;
+
+    let id = obj.id;
+    let week = obj.week;
+    let copy_idx = weekList[week].findIndex(e => e.id == id);
+
+    let copy_obj = {
+      task: weekList[week][copy_idx].task,
+      id: new_id,
+      isChecked: false,
+    }
+
+    weekList[week].splice(copy_idx + 1, 0, copy_obj)
+  }
+
+  return { count, addTask, delTask, copyTask, weekList }
 
 },
   { 

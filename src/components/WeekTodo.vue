@@ -13,7 +13,7 @@ const props = defineProps(
     ["weekTasks"]
 );
 
-const emits = defineEmits(["addTask"]);
+const emits = defineEmits(["addTask","delTask","copyTask"]);
 
 let weekTasks = props.weekTasks;
 console.log(weekTasks);
@@ -32,11 +32,15 @@ let isDrag = ref(false);
 let disableDraggable = ref(false);
 let contenteditable = ref(true);
 
-let popoverStyle = reactive({
-    position: 'absolute',
+let popUp = reactive({
     top: '0px',
     left: '0px'
 })
+
+let copy_del_obj = reactive({
+    week:null,
+    id:null
+});
 
 const onMove = () => {
     isDrag.value = true;
@@ -64,7 +68,6 @@ const swHoverContent = (id) => {
 
     inputRefs.value[id].addEventListener('blur', () => {
         isFocused = false;
-        isHover.value = null;
     });
 
     if (!isFocused && !isDrag.value && !popActive.value) {
@@ -95,6 +98,16 @@ const add_task = (day) => {
     swNew_input.value = null
 }
 
+const del_task = () => {
+    emits("delTask", copy_del_obj);
+    popActive.value = !popActive.value;
+}
+
+const copy_task = () => {
+    emits("copyTask", copy_del_obj);
+    popActive.value = !popActive.value;
+}
+
 const onDragStart = (event) => {
     swAdd_area.value = !swAdd_area.value;
 };
@@ -107,11 +120,13 @@ const updateContent = (target) => {
     target.task = event.target.innerText;
 };
 
-const sw_pop = (event) => {
+const sw_pop = (id, week) => {
+    copy_del_obj.id = id;
+    copy_del_obj.week = week;
+
     const buttonRect = event.target.getBoundingClientRect();
-    console.log(buttonRect);
-    popoverStyle.top = `${buttonRect.bottom + window.scrollY + 3}px`;
-    popoverStyle.left = `${buttonRect.left + window.scrollX}px`;
+    popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
+    popUp.left = `${buttonRect.left + window.scrollX}px`;
 
     popActive.value = !popActive.value;
     tooltipActive.value = false;
@@ -128,6 +143,9 @@ const sw_tool = (status) => {
             if (popActive.value) {
                 tooltipActive.value = false;
             } else {
+                const buttonRect = event.target.getBoundingClientRect();
+                popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
+                popUp.left = `${buttonRect.left + window.scrollX}px`;
                 tooltipActive.value = true;
             }
     }
@@ -136,6 +154,7 @@ const sw_tool = (status) => {
 let removeYourListener = null;
 const handleClickOutside = (event) => {
     let els = document.querySelectorAll(".list-icon-group");
+    let hover_content = document.querySelectorAll(".list-hover-content");
     const YOUR_ELEMENT = popup.value;
 
     //nodelist to array
@@ -144,8 +163,15 @@ const handleClickOutside = (event) => {
         return el.contains(event.target);
     });
 
-    if (!YOUR_ELEMENT.contains(event.target) && !isClickInside) {
+    const isClickInside2 = Array.from(hover_content).some((el) => {
+        return el.contains(event.target);
+    });
+
+    if (!YOUR_ELEMENT.contains(event.target) && !isClickInside && !isClickInside2) {
         popActive.value = false;
+        isHover.value = null
+        contenteditable.value = true;
+        disableDraggable.value = false;
     }
 };
 
@@ -197,15 +223,12 @@ let inputRefs = ref([]);
                                                 :ref="el => inputRefs[element.id] = el">
                                                 {{ element.task }}</div>
                                         </div>
-                                        <div class="list-icon-group" @click="sw_pop" @mouseenter="sw_tool"
+                                        <div class="list-icon-group" @click="sw_pop(element.id, day)" @mouseenter="sw_tool"
                                             @mousedown="sw_tool('close')">
                                             <span class="handle">
                                                 <font-awesome-icon :icon="['fas', 'grip-vertical']" />
                                             </span>
-                                            <div class="tooltip" v-show="tooltipActive">
-                                                <p>Drag to move</p>
-                                                <p>Click to open menu</p>
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -231,9 +254,20 @@ let inputRefs = ref([]);
         </div>
     </div>
 
-    <div class="popover" v-show="popActive" ref="popup" :style="popoverStyle">
-        <div class="delete">Delete</div>
-        <div class="copy">Copy</div>
+    <div class="tooltip" v-show="tooltipActive" :style="popUp">
+        <p>Drag to move</p>
+        <p>Click to open menu</p>
+    </div>
+
+    <div class="popover" v-show="popActive" ref="popup" :style="popUp">
+        <div class="delete" @click="del_task">
+            <font-awesome-icon :icon="['fas', 'trash-can']" />
+            Delete
+        </div>
+        <div class="copy" @click="copy_task">
+            <font-awesome-icon :icon="['fas', 'copy']" />
+            Copy
+        </div>
     </div>
 </template>
 
@@ -350,24 +384,20 @@ input[type="text"] {
     cursor: pointer;
 }
 
-.list-icon-group .tooltip {
+.tooltip {
     position: absolute;
     background-color: rgba(0, 0, 0, .7);
     color: #fff;
     text-align: center;
     border-radius: 6px;
     padding: 5px;
-    z-index: 1;
-    bottom: -50%;
-    margin-bottom: -50px;
-    margin-left: -73px;
-    /* opacity:1;
-    visibility: visible; */
+    z-index: 9;
     transition: opacity 0.3s;
     width: max-content;
+    transform: translate(-50%, 10px);
 }
 
-.list-icon-group .tooltip::after {
+.tooltip::after {
     content: "";
     position: absolute;
     bottom: 0;
@@ -402,6 +432,9 @@ input[type="text"] {
 .popover div {
     padding: 5px;
     border-radius: 5px;
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
 }
 
 .popover .delete {
@@ -410,7 +443,9 @@ input[type="text"] {
 
 .popover div:hover {
     background-color: #eee;
+    cursor: pointer;
 }
+
 
 .list-icon-group>span {
     margin: 0 5px;
@@ -430,13 +465,6 @@ input[type="text"] {
 
 .new-todo-area {
     display: grid;
-}
-
-
-.fake-area {
-    background-image: linear-gradient(0deg, transparent 48.08%, #eaecef 0, #eaecef 50%, transparent 0, transparent 98.08%, #eaecef 0, #eaecef);
-    background-size: 52px 52px;
-    height: calc(100% - 25px);
 }
 
 .drag-container {

@@ -11,11 +11,20 @@ console.log(week_tasks);
 const emitAddTask = (val,day) => {
   store.addTask(val,day)
 }
+
+const emitDelTask = (copy_del_obj) => {
+  store.delTask(copy_del_obj)
+}
+
+const emitCopyTask = (copy_del_obj) => {
+  store.copyTask(copy_del_obj)
+}
+
 </script>
 
 <template>
   <main>
-    <WeekTodo :weekTasks="week_tasks" @addTask="emitAddTask"></WeekTodo>
+    <WeekTodo :weekTasks="week_tasks" @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask"></WeekTodo>
   </main>
 </template>
 
