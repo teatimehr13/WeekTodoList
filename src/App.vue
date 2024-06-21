@@ -39,6 +39,7 @@ const emitCopyTask = (copy_del_obj) => {
     display: block;
     width: 100%;
     padding: 0;
-    background: #f8f8ff;
+    /* background: #f8f8ff; */
+    max-width: 100%;
   }
 </style>
