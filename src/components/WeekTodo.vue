@@ -10,13 +10,15 @@ defineComponent({
 });
 
 const props = defineProps(
-    ["weekTasks"]
+    ["weekTasks", "goalsTask"]
 );
 
 const emits = defineEmits(["addTask", "delTask", "copyTask"]);
 
 let weekTasks = props.weekTasks;
-console.log(weekTasks);
+let goalsTask = props.goalsTask;
+// console.log(weekTasks);
+// console.log(goalsTask);
 
 let isEdit = ref(null);
 let isHover = ref(null);
@@ -64,21 +66,39 @@ const swEditInput = (id) => {
 }
 
 let isFocused = false;
-const swHoverContent = (id) => {
-    inputRefs.value[id].addEventListener('focus', () => {
-        isFocused = true;
-    });
+const swHoverContent = (id, num) => {
+    switch (num) {
+        case 1:
+            inputRefs.value[id].addEventListener('focus', () => {
+                isFocused = true;
+            });
 
-    inputRefs.value[id].addEventListener('blur', () => {
-        isFocused = false;
-    });
+            inputRefs.value[id].addEventListener('blur', () => {
+                isFocused = false;
+            });
 
-    if (!isFocused && !isDrag.value && !popActive.value) {
-        isHover.value === id ? isHover.value = null : isHover.value = id;
+            if (!isFocused && !isDrag.value && !popActive.value) {
+                isHover.value === id ? isHover.value = null : isHover.value = id;
+            }
+
+            isDrag.value = false;
+            tooltipActive.value = false;
+            break
+        case 2:
+            inputRefs2.value[id].addEventListener('focus', () => {
+                isFocused = true;
+            });
+
+            inputRefs2.value[id].addEventListener('blur', () => {
+                isFocused = false;
+            });
+
+            if (!isFocused && !isDrag.value && !popActive.value) {
+                isHover.value === id ? isHover.value = null : isHover.value = id;
+            }
+            break
     }
 
-    isDrag.value = false;
-    tooltipActive.value = false;
 }
 
 const handleClick = (id) => {
@@ -210,9 +230,9 @@ onUnmounted(() => {
         document.removeEventListener("mousedown", handleClickOutside);
     }
 });
-
 //使用id做為key or 使用兩層index作為target
 let inputRefs = ref([]);
+let inputRefs2 = ref([]);
 </script>
 
 <template>
@@ -222,8 +242,11 @@ let inputRefs = ref([]);
                 <div>
                     <div class="week-con">
                         <h2>{{ day }}</h2>
-                        <span class="week-text" :class="{ current_date: currentDate == weeksArr[idx]}"> {{ weeksArr[idx] }}</span>
-                        <span v-if="weeksArr[idx] === currentDate" :class="{ current_date: currentDate == weeksArr[idx]}"> (today)</span>
+                        <span class="week-text" :class="{ current_date: currentDate == weeksArr[idx] }"> {{
+                            weeksArr[idx]
+                            }}</span>
+                        <span v-if="weeksArr[idx] === currentDate"
+                            :class="{ current_date: currentDate == weeksArr[idx] }"> (Today)</span>
                     </div>
                     <ul>
                         <draggable :list="tasks" group="tasks" animation="300" @start="onDragStart" @end="onDragEnd"
@@ -232,19 +255,20 @@ let inputRefs = ref([]);
                             <template #item="{ element, index }">
                                 <li class="list-container">
                                     <div class="list-content">
-                                        <div v-show="isEdit != element.id" @mouseenter="swHoverContent(element.id)"
+                                        <div v-show="isEdit != element.id" @mouseenter="swHoverContent(element.id,1)"
                                             @click="handleClick(element.id)">
                                             <input type="checkbox" v-model="element.isChecked">
-                                            <span>{{ element.task }}</span>
+                                            <span :class="{ task_finish: element.isChecked }">{{ element.task }}</span>
                                         </div>
                                     </div>
                                     <div class="list-hover-content" v-show="isHover == element.id"
-                                        @mouseleave="swHoverContent(element.id)">
+                                        @mouseleave="swHoverContent(element.id,1)">
                                         <div class="list-hover-container">
                                             <div>
                                                 <input type="checkbox" v-model="element.isChecked">
                                                 <div :contenteditable=contenteditable @input="updateContent(element)"
-                                                    :ref="el => inputRefs[element.id] = el">
+                                                    :ref="el => inputRefs[element.id] = el"
+                                                    :class="{ task_finish: element.isChecked }">
                                                     {{ element.task }}</div>
                                             </div>
                                             <div class="list-icon-group" @click="sw_pop(element.id, day)"
@@ -281,7 +305,73 @@ let inputRefs = ref([]);
                     </ul>
                 </div>
             </div>
+
+            <div class="week-goals">
+                <div class="weekly-goals-con">
+                    <div class="week-con">
+                        <h2> Weekly Goals </h2>
+                        <span class="week-text"> {{ weeksArr[0] + " ~ " + weeksArr.at(-1) }}</span>
+                    </div>
+
+                    <ul>
+                        <draggable :list="goalsTask" group="goals" animation="300" @start="" @end="" item-key="id"
+                            class="drag-container" tag="ul" ghost-class="ghost" drag-class="drag" handle=".handle"
+                            :disabled="disableDraggable">
+                            <template #item="{ element, index }">
+                                <li class="list-container">
+                                    <div class="list-content">
+                                        <div v-show="isEdit != element.id" @mouseenter="swHoverContent(element.id,2)"
+                                            @click="handleClick(element.id)">
+                                            <span> {{ element.task }}</span>
+                                            <!-- <span> {{ (index + 1) + ". " + element.task }}</span> -->
+                                        </div>
+                                    </div>
+                                    <div class="list-hover-content" v-show="isHover == element.id"
+                                        @mouseleave="swHoverContent(element.id,2)">
+                                        <div class="list-hover-container">
+                                            <div>
+                                                <div :contenteditable=contenteditable @input="updateContent(element)"
+                                                    :ref="el => inputRefs2[element.id] = el"
+                                                    :class="{ task_finish: element.isChecked }">
+                                                    {{ element.task }}</div>
+                                            </div>
+                                            <div class="list-icon-group" @click="sw_pop(element.id, day)"
+                                                @mouseenter="sw_tool" @mousedown="sw_tool('close')">
+                                                <span class="handle">
+                                                    <font-awesome-icon :icon="['fas', 'grip-vertical']" />
+                                                </span>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </template>
+                            <template #footer>
+                                <!-- <div style="flex-grow: 1;" class="here draggable-item" v-show="swAdd_area">
+                                    <div class="new-todo-area">
+                                        <input v-if="swNew_input == day" type="text" class="new-todo-input"
+                                            placeholder="請輸入新任務" style="width: max-content;"
+                                            :ref="el => new_input[day] = el" @blur="add_task(day)"
+                                            @keyup.enter="$event.target.blur()">
+                                        <button @click="newInput_Toggle(day)" v-show="swNew_input != day">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" xfill-rule="evenodd"
+                                                clip-rule="evenodd">
+                                                <path d="M11 11v-11h1v11h11v1h-11v11h-1v-11h-11v-1h11z"
+                                                    class="plus-path" />
+                                            </svg>
+                                            <span> Add Task</span>
+                                        </button>
+                                    </div>
+                                </div> -->
+                            </template>
+                        </draggable>
+                    </ul>
+                </div>
+            </div>
         </div>
+
+
+
 
         <div class="tooltip" v-show="tooltipActive" :style="popUp">
             <p>Drag to move</p>
@@ -326,7 +416,7 @@ h2 {
 .week-con::after {
     content: "";
     position: absolute;
-    bottom: -5px ;
+    bottom: -5px;
     left: 0;
     width: 100%;
     border-bottom: 1px solid rgba(44, 43, 38, 0.16);
@@ -338,7 +428,7 @@ h2 {
 }
 
 .current_date {
-    color:#4d90d3;
+    color: #4d90d3;
 }
 
 .layout-width {
@@ -377,6 +467,11 @@ h2 {
     height: 100%;
 }
 
+.weekly-goals-con {
+    padding: 10px 20px;
+}
+
+
 input:focus {
     outline: none;
 }
@@ -394,8 +489,8 @@ input[type="text"] {
 .list-content>div,
 .list-hover-content>div {
     display: flex;
+    column-gap: 3px;
 }
-
 
 .list-content span {
     overflow: hidden;
@@ -405,6 +500,11 @@ input[type="text"] {
 
 .list-content>div:first-child {
     padding: 0px 5px;
+}
+
+.task_finish {
+    text-decoration: line-through rgba(55, 53, 47, 0.25);
+    color: rgba(55, 53, 47, .65);
 }
 
 .new-todo-area button {
@@ -454,6 +554,12 @@ input[type="text"] {
     justify-content: space-between;
 }
 
+input[type="checkbox"] {
+    width: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 .list-hover-container input[type="checkbox"] {
     align-self: start;
     min-height: 1.2rem;
@@ -461,6 +567,7 @@ input[type="text"] {
 
 .list-hover-container>div {
     display: flex;
+    column-gap: 3px;
 }
 
 .list-hover-content span {
@@ -571,5 +678,9 @@ input[type="text"] {
     outline: none;
     width: 100%;
     min-width: 50px;
+}
+
+.week-goals {
+    width: 40%;
 }
 </style>

@@ -6,7 +6,9 @@ import { storeToRefs } from 'pinia';
 const store = useCounterStore();
 const storeData = storeToRefs(useCounterStore());
 let week_tasks = storeData.weekList.value;
-console.log(week_tasks);
+let goals_tasks = storeData.goalsList.value;
+// console.log(week_tasks);
+// console.log(goals_tasks);
 
 const emitAddTask = (val,day) => {
   store.addTask(val,day)
@@ -24,7 +26,8 @@ const emitCopyTask = (copy_del_obj) => {
 
 <template>
   <main>
-    <WeekTodo :weekTasks="week_tasks" @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask"></WeekTodo>
+    <WeekTodo :weekTasks="week_tasks" :goalsTask="goals_tasks"
+    @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask" ></WeekTodo>
   </main>
 </template>
 

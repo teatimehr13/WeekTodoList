@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useCounterStore = defineStore('useCounterStore', () => {
@@ -15,12 +15,28 @@ export const useCounterStore = defineStore('useCounterStore', () => {
     }
   )
 
+  let default_goals_list = ref([
+    { task: 'goals', id: 1001 },
+    { task: 'goals', id: 1002 }
+  ]
+
+  );
+
   const storedData = localStorage.getItem("useCounterStore");
   let initialWeekList = storedData ? JSON.parse(storedData).weekList : {};
+  let initialGoalsList = storedData ? JSON.parse(storedData).goalsList : [];
+  console.log(initialWeekList);
+  console.log(initialGoalsList);
+
   let weekList = !Object.values(initialWeekList).length ? initialWeekList = default_list.value : ref(initialWeekList).value;
-  console.log(weekList);
+  let goalsList = !initialGoalsList.length ? initialGoalsList = default_goals_list.value : ref(initialGoalsList);
+  // console.log(ref(initialGoalsList).value);
+  // console.log(weekList);
+  // console.log(goalsList);
 
   let maxId = Math.max(...Object.values(weekList).flat().map(task => task.id));
+  // let maxId_g = Math.max(...goalsList.map(e => e.id));
+
 
   const addTask = (val, day) => {
     maxId += 1;
@@ -38,7 +54,7 @@ export const useCounterStore = defineStore('useCounterStore', () => {
     let id = obj.id;
     let week = obj.week;
     let del_idx = weekList[week].findIndex(e => e.id == id);
-    weekList[week].splice(del_idx,1);
+    weekList[week].splice(del_idx, 1);
   }
 
   const copyTask = (obj) => {
@@ -58,10 +74,10 @@ export const useCounterStore = defineStore('useCounterStore', () => {
     weekList[week].splice(copy_idx + 1, 0, copy_obj)
   }
 
-  return { count, addTask, delTask, copyTask, weekList }
+  return { count, addTask, delTask, copyTask, weekList, goalsList }
 
 },
-  { 
-    persist: true, 
+  {
+    persist: true,
   }
 )
