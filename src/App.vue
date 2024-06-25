@@ -10,8 +10,8 @@ let goals_tasks = storeData.goalsList.value;
 // console.log(week_tasks);
 // console.log(goals_tasks);
 
-const emitAddTask = (val,day) => {
-  store.addTask(val,day)
+const emitAddTask = (val,day,target) => {
+  store.addTask(val,day,target)
 }
 
 const emitDelTask = (copy_del_obj) => {
@@ -27,7 +27,8 @@ const emitCopyTask = (copy_del_obj) => {
 <template>
   <main>
     <WeekTodo :weekTasks="week_tasks" :goalsTask="goals_tasks"
-    @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask" ></WeekTodo>
+    @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask"
+    ></WeekTodo>
   </main>
 </template>
 
@@ -36,6 +37,10 @@ const emitCopyTask = (copy_del_obj) => {
     padding: 0;
     margin: 0;
     list-style: none;
+  }
+
+  body {
+    /* background-color: #f1f6fb; */
   }
 
   #app {
