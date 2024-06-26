@@ -5,13 +5,13 @@ export const useCounterStore = defineStore('useCounterStore', () => {
   const count = ref(0)
   let default_list = ref(
     {
-      Monday: [{ task: 'This is a test of the new task layout for numerous words.', id: 1, isChecked: false },],
-      Tuesday: [{ task: 'New Task', id: 3, isChecked: false },],
-      Wednesday: [{ task: 'New Task', id: 5, isChecked: false },],
-      Thursday: [{ task: 'New Task', id: 9, isChecked: false },],
-      Friday: [{ task: 'New Task', id: 13, isChecked: false },],
-      Saturday: [{ task: 'New Task', id: 17, isChecked: false },],
-      Sunday: [{ task: 'New Task', id: 21, isChecked: false },]
+      Monday: [{ task: 'This is a test of the new task layout for numerous words.', id: 1, isChecked: false, priority:"high" },],
+      Tuesday: [{ task: 'New Task', id: 3, isChecked: false, priority:"medium" },],
+      Wednesday: [{ task: 'New Task', id: 5, isChecked: false, priority:"low" },],
+      Thursday: [{ task: 'New Task', id: 9, isChecked: false, priority:"" },],
+      Friday: [{ task: 'New Task', id: 13, isChecked: false, priority:"" },],
+      Saturday: [{ task: 'New Task', id: 17, isChecked: false, priority:"" },],
+      Sunday: [{ task: 'New Task', id: 21, isChecked: false, priority:"" },]
     }
   )
 
@@ -42,6 +42,7 @@ export const useCounterStore = defineStore('useCounterStore', () => {
           task: val,
           id: new_id,
           isChecked: false,
+          priority:""
         })
         break
       case "goals":
@@ -90,6 +91,7 @@ export const useCounterStore = defineStore('useCounterStore', () => {
           task: weekList[week][copy_idx].task,
           id: new_id,
           isChecked: false,
+          priority:weekList[week][copy_idx]["priority"]
         }
 
         weekList[week].splice(copy_idx + 1, 0, copy_obj)
@@ -111,7 +113,29 @@ export const useCounterStore = defineStore('useCounterStore', () => {
 
   }
 
-  return { count, addTask, delTask, copyTask, weekList, goalsList }
+  const changePri = (obj,priority) => {
+    let week = obj.week;
+    let id = obj.id;
+
+    let idx = weekList[week].findIndex(e => e.id == id);
+
+    switch (priority) {
+        case "low":
+            weekList[week][idx]["priority"] = priority;
+            break
+        case "medium":
+            weekList[week][idx]["priority"] = priority;
+            break
+        case "high":
+            weekList[week][idx]["priority"] = priority;
+            break
+        case "none":
+            weekList[week][idx]["priority"] = "";
+            break
+    }
+  }
+
+  return { count, addTask, delTask, copyTask, changePri, weekList, goalsList }
 
 },
   {

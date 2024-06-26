@@ -13,7 +13,7 @@ const props = defineProps(
     ["weekTasks", "goalsTask"]
 );
 
-const emits = defineEmits(["addTask", "delTask", "copyTask", "addGoals"]);
+const emits = defineEmits(["addTask", "delTask", "copyTask", "changePri"]);
 
 let weekTasks = props.weekTasks;
 let goalsTask = props.goalsTask;
@@ -152,7 +152,6 @@ const del_task = () => {
 }
 
 const copy_task = () => {
-    console.log(copy_del_obj);
     switch (del_target.value) {
         case "tasks":
             emits("copyTask", copy_del_obj);
@@ -182,7 +181,6 @@ const sw_pop = (id, week, target) => {
     copy_del_obj.id = id;
     copy_del_obj.week = week;
     copy_del_obj.target = target;
-
 
     const buttonRect = event.target.getBoundingClientRect();
     popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
@@ -254,6 +252,10 @@ const getWeek = () => {
     return weekDates
 }
 
+const change_pri = (priority) => {
+    emits("changePri", copy_del_obj, priority)
+    popActive.value = !popActive.value;
+}
 
 onMounted(() => {
     document.addEventListener("mousedown", handleClickOutside);
@@ -270,6 +272,7 @@ onUnmounted(() => {
 //使用id做為key or 使用兩層index作為target
 let inputRefs = ref([]);
 let inputRefs2 = ref([]);
+
 </script>
 
 <template>
@@ -281,9 +284,10 @@ let inputRefs2 = ref([]);
                         <h2>{{ day }}</h2>
                         <span class="week-text" :class="{ current_date: currentDate == weeksArr[idx] }"> {{
                             weeksArr[idx]
-                            }}</span>
+                        }}</span>
                         <span v-if="weeksArr[idx] === currentDate"
-                            :class="{ current_date: currentDate == weeksArr[idx] }" style="font-size: 14px;"> (Today)</span>
+                            :class="{ current_date: currentDate == weeksArr[idx] }" style="font-size: 14px;">
+                            (Today)</span>
                     </div>
                     <ul>
                         <draggable :list="tasks" group="tasks" animation="300" @start="onDragStart" @end="onDragEnd"
@@ -296,24 +300,40 @@ let inputRefs2 = ref([]);
                                             @click="handleClick(element.id)">
                                             <input type="checkbox" v-model="element.isChecked">
                                             <span :class="{ task_finish: element.isChecked }">{{ element.task }}</span>
+                                            <div class="show-circle">
+                                                <font-awesome-icon :icon="['fas', 'circle']" :class="{
+                                                    low_c: element.priority == 'low',
+                                                    medium_c: element.priority == 'medium',
+                                                    high_c: element.priority == 'high',
+                                                    none_c: element.priority == ''
+                                                }" />
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="list-hover-content" v-show="isHover == element.id"
                                         @mouseleave="swHoverContent(element.id, 1)">
                                         <div class="list-hover-container">
-                                            <div>
+                                            <div style="flex-grow: 1;">
                                                 <input type="checkbox" v-model="element.isChecked">
                                                 <div :contenteditable=contenteditable @input="updateContent(element)"
                                                     :ref="el => inputRefs[element.id] = el"
                                                     :class="{ task_finish: element.isChecked }">
                                                     {{ element.task }}</div>
                                             </div>
+                                            <div class="show-circle">
+                                                <font-awesome-icon :icon="['fas', 'circle']" :class="{
+                                                    low_c: element.priority == 'low',
+                                                    medium_c: element.priority == 'medium',
+                                                    high_c: element.priority == 'high',
+                                                    none_c: element.priority == ''
+                                                }" />
+                                            </div>
+
                                             <div class="list-icon-group" @click="sw_pop(element.id, day, 'tasks')"
-                                                @mouseenter="sw_tool" @mousedown="sw_tool('close')">
+                                                @mouseenter="sw_tool" @mousedown="sw_tool('close')" @mouseleave="sw_tool('close')">
                                                 <span class="handle">
                                                     <font-awesome-icon :icon="['fas', 'grip-vertical']" />
                                                 </span>
-
                                             </div>
                                         </div>
                                     </div>
@@ -372,7 +392,7 @@ let inputRefs2 = ref([]);
                                                     {{ element.task }}</div>
                                             </div>
                                             <div class="list-icon-group" @click="sw_pop(element.id, '', 'goals')"
-                                                @mouseenter="sw_tool" @mousedown="sw_tool('close')">
+                                                @mouseenter="sw_tool" @mousedown="sw_tool('close')" @mouseleave="sw_tool('close')">
                                                 <span class="handle">
                                                     <font-awesome-icon :icon="['fas', 'grip-vertical']" />
                                                 </span>
@@ -386,8 +406,9 @@ let inputRefs2 = ref([]);
                                 <div style="flex-grow: 1;" class="here draggable-item">
                                     <div class="new-todo-area">
                                         <input v-if="swNew_input2" type="text" class="new-todo-input"
-                                            placeholder="set a new weekly goal" style="width: max-content;" ref="new_input2"
-                                            @blur="add_task('', 'goals')" @keyup.enter="$event.target.blur()">
+                                            placeholder="set a new weekly goal" style="width: max-content;"
+                                            ref="new_input2" @blur="add_task('', 'goals')"
+                                            @keyup.enter="$event.target.blur()">
                                         <button @click="newInput_Toggle('swNew_input2')" v-show="!swNew_input2">
                                             <svg width="16" height="16" viewBox="0 0 24 24" xfill-rule="evenodd"
                                                 clip-rule="evenodd">
@@ -413,11 +434,36 @@ let inputRefs2 = ref([]);
         <div class="popover" v-show="popActive" ref="popup" :style="popUp">
             <div class="delete" @click="del_task">
                 <font-awesome-icon :icon="['fas', 'trash-can']" />
-                Delete
+                <div>Delete</div>
             </div>
             <div class="copy" @click="copy_task">
                 <font-awesome-icon :icon="['fas', 'copy']" />
-                Copy
+                <div>Duplicate</div>
+            </div>
+            <div class="priority" v-if="copy_del_obj.target != 'goals'">
+                <font-awesome-icon :icon="['fas', 'fire']" />
+                <div class="priority-con">
+                    Priority
+                    <div class="priority-child-con">
+                        <div @click="change_pri('low')">
+                            <div><font-awesome-icon :icon="['fas', 'circle']" class="low_c" /></div>
+                            <span>Low</span>
+                        </div>
+                        <div @click="change_pri('medium')">
+                            <div><font-awesome-icon :icon="['fas', 'circle']" class="medium_c" /></div>
+                            <span>Medium</span>
+                        </div>
+                        <div @click="change_pri('high')">
+                            <div><font-awesome-icon :icon="['fas', 'circle']" class="high_c" /></div>
+                            <span>High</span>
+                        </div>
+                        <div @click="change_pri('none')">
+                            <div><font-awesome-icon :icon="['far', 'circle']" class="default_c" /></div>
+                            <span>None</span>
+                        </div>
+                    </div>
+                </div>
+                <font-awesome-icon :icon="['fas', 'chevron-right']" class="cr" />
             </div>
         </div>
 
@@ -547,6 +593,7 @@ input[type="text"] {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex-grow: 1;
 }
 
 .list-content>div:first-child {
@@ -666,10 +713,13 @@ input[type="text"] {
     z-index: 9;
     opacity: 1;
     transition: opacity 0.3s;
-    box-shadow: 0 1px 15px 2px rgba(0, 0, 0, .15);
+    box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px,
+        rgba(15, 15, 15, 0.1) 0px 3px 6px,
+        rgba(15, 15, 15, 0.1) 0px 5px 20px;
+    min-width: 110px;
 }
 
-.popover div {
+.popover>div {
     padding: 5px;
     border-radius: 5px;
     display: flex;
@@ -681,7 +731,7 @@ input[type="text"] {
     color: rgb(209, 60, 60);
 }
 
-.popover div:hover {
+.popover>div:hover {
     background-color: #eee;
     cursor: pointer;
 }
@@ -720,5 +770,80 @@ input[type="text"] {
     visibility: hidden;
 }
 
+.priority-child-con {
+    position: absolute;
+    flex-direction: column;
+    left: 100%;
+    top: 0;
+    box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px,
+        rgba(15, 15, 15, 0.1) 0px 3px 6px,
+        rgba(15, 15, 15, 0.1) 0px 5px 20px;
+    background-color: #FFF;
+    transform: translateX(25px);
+    display: none;
+    align-items: center;
+    column-gap: 5px;
+    padding: 5px;
+    border-radius: 5px
+}
 
+.priority:hover .priority-child-con {
+    display: flex;
+}
+
+.priority-child-con>div {
+    display: flex;
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 120px;
+    column-gap: 8px;
+    align-items: center;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.priority-child-con>div:hover {
+    background: #eee;
+}
+
+.priority-con {
+    position: relative
+}
+
+.low_c {
+    color: #a8e4a8;
+}
+
+.medium_c {
+    color: #f1f168
+}
+
+.high_c {
+    color: #e54f4f;
+}
+
+.none_c {
+    color: transparent;
+    /* color: #e1e1de; */
+}
+
+.default_c {
+    color: #e1e1de;
+}
+
+.cr {
+    color: #808080;
+    font-size: 14px;
+}
+
+.show-circle {
+    font-size: 12px;
+    /* align-self: center; */
+    color: transparent;
+
+    align-self: flex-start;
+    min-height: 1.2rem;
+    display: flex;
+    align-items: center;
+}
 </style>

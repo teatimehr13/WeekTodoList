@@ -7,8 +7,7 @@ const store = useCounterStore();
 const storeData = storeToRefs(useCounterStore());
 let week_tasks = storeData.weekList.value;
 let goals_tasks = storeData.goalsList.value;
-// console.log(week_tasks);
-// console.log(goals_tasks);
+
 
 const emitAddTask = (val,day,target) => {
   store.addTask(val,day,target)
@@ -22,12 +21,16 @@ const emitCopyTask = (copy_del_obj) => {
   store.copyTask(copy_del_obj)
 }
 
+const emitChangePri = (copy_del_obj, priority) => {
+  store.changePri(copy_del_obj, priority)
+}
+
 </script>
 
 <template>
   <main>
     <WeekTodo :weekTasks="week_tasks" :goalsTask="goals_tasks"
-    @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask"
+    @addTask="emitAddTask" @delTask="emitDelTask" @copyTask="emitCopyTask" @changePri="emitChangePri"
     ></WeekTodo>
   </main>
 </template>
