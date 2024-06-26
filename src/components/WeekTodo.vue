@@ -184,7 +184,7 @@ const sw_pop = (id, week, target) => {
 
     const buttonRect = event.target.getBoundingClientRect();
     popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
-    popUp.left = `${buttonRect.left + window.scrollX}px`;
+    popUp.left = week == "Friday" ? `${buttonRect.left - 115 + window.scrollX}px` : `${buttonRect.left + window.scrollX}px`;
 
     popActive.value = !popActive.value;
     tooltipActive.value = false;
@@ -203,7 +203,7 @@ const sw_tool = (status) => {
             } else {
                 const buttonRect = event.target.getBoundingClientRect();
                 popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
-                popUp.left = `${buttonRect.left + window.scrollX}px`;
+                popUp.left =`${buttonRect.left + window.scrollX}px`;
                 tooltipActive.value = true;
             }
     }
