@@ -17,11 +17,11 @@ export default defineConfig({
       threshold: 50000, // 50kb
     })
   ],
-  // resolve: {
-  //   alias: {
-  //     '@': fileURLToPath(new URL('./src', import.meta.url))
-  //   }
-  // },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
   build: {
     rollupOptions: {
       output: {
