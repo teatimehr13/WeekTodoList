@@ -36,6 +36,7 @@ let disableDraggable = ref(false);
 let contenteditable = ref(true);
 let weeksArr = ref([]);
 let currentDate = ref(null);
+let rightLimit = ref(false);
 
 let popUp = reactive({
     top: '0px',
@@ -46,6 +47,11 @@ let copy_del_obj = reactive({
     week: null,
     id: null,
 });
+
+let pcc_position = reactive ({
+    left:'100%',
+    transform: 'translateX(25px)'
+})
 
 const onMove = () => {
     isDrag.value = true;
@@ -184,7 +190,10 @@ const sw_pop = (id, week, target) => {
 
     const buttonRect = event.target.getBoundingClientRect();
     popUp.top = `${buttonRect.bottom + window.scrollY + 3}px`;
-    popUp.left = week == "Friday" ? `${buttonRect.left - 115 + window.scrollX}px` : `${buttonRect.left + window.scrollX}px`;
+    popUp.left = `${buttonRect.left + window.scrollX}px`; 
+
+    pcc_position.left = (week === 'Friday') ? '-100%' : '100%';
+    pcc_position.transform = (week === 'Friday') ? 'translateX(-102px)' : 'translateX(25px)';
 
     popActive.value = !popActive.value;
     tooltipActive.value = false;
@@ -313,7 +322,7 @@ let inputRefs2 = ref([]);
                                     <div class="list-hover-content" v-show="isHover == element.id"
                                         @mouseleave="swHoverContent(element.id, 1)">
                                         <div class="list-hover-container">
-                                            <div style="flex-grow: 1;">
+                                            <div>
                                                 <input type="checkbox" v-model="element.isChecked">
                                                 <div :contenteditable=contenteditable @input="updateContent(element)"
                                                     :ref="el => inputRefs[element.id] = el"
@@ -444,7 +453,7 @@ let inputRefs2 = ref([]);
                 <font-awesome-icon :icon="['fas', 'fire']" />
                 <div class="priority-con">
                     Priority
-                    <div class="priority-child-con">
+                    <div class="priority-child-con" :style="pcc_position">
                         <div @click="change_pri('low')">
                             <div><font-awesome-icon :icon="['fas', 'circle']" class="low_c" /></div>
                             <span>Low</span>
@@ -586,7 +595,7 @@ input[type="text"] {
 .list-content>div,
 .list-hover-content>div {
     display: flex;
-    column-gap: 3px;
+    column-gap: 5px;
 }
 
 .list-content span {
@@ -660,7 +669,11 @@ input[type="text"] {
 .list-hover-container>div {
     display: flex;
     column-gap: 3px;
-    /* #e5f1fd */
+}
+
+.list-hover-container > div:first-child{
+    flex-grow: 1; 
+    column-gap: 5px;
 }
 
 .list-hover-content span {
@@ -720,11 +733,12 @@ input[type="text"] {
 }
 
 .popover>div {
-    padding: 5px;
+    padding: 10px;
     border-radius: 5px;
     display: flex;
     align-items: center;
-    column-gap: 5px;
+    column-gap: .5rem;
+    font-size: 16px;
 }
 
 .popover .delete {
@@ -773,13 +787,13 @@ input[type="text"] {
 .priority-child-con {
     position: absolute;
     flex-direction: column;
-    left: 100%;
+    /* left: 100%; */
     top: 0;
     box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px,
         rgba(15, 15, 15, 0.1) 0px 3px 6px,
         rgba(15, 15, 15, 0.1) 0px 5px 20px;
     background-color: #FFF;
-    transform: translateX(25px);
+    /* transform: translateX(25px); */
     display: none;
     align-items: center;
     column-gap: 5px;
@@ -798,8 +812,9 @@ input[type="text"] {
     min-width: 120px;
     column-gap: 8px;
     align-items: center;
-    padding: 5px;
+    padding: 10px;
     border-radius: 5px;
+    column-gap: .5rem;
 }
 
 .priority-child-con>div:hover {
