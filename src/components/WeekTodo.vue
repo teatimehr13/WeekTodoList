@@ -855,7 +855,7 @@ input[type="text"] {
     font-size: 12px;
     /* align-self: center; */
     color: transparent;
-
+    height: 26px;
     align-self: flex-start;
     min-height: 1.2rem;
     display: flex;
